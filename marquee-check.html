@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Marquee Check</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: monospace;
+    }
+    .test-container {
+      width: 100%;
+      height: 300px;
+      background: #f0f0f0;
+      position: relative;
+      overflow: hidden;
+      border: 2px solid black;
+    }
+    .marquee-container {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transform: rotate(45deg);
+      background: rgba(255, 0, 0, 0.1);
+    }
+    .marquee-row {
+      display: flex;
+      width: 100%;
+      gap: 0.5rem;
+      background: rgba(0, 255, 0, 0.1);
+    }
+    .marquee-content {
+      display: flex;
+      gap: 0.5rem;
+      animation: scroll 10s linear infinite;
+    }
+    .marquee-content img {
+      width: 50px;
+      height: 50px;
+      flex-shrink: 0;
+      border: 1px solid blue;
+    }
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+    #log {
+      margin-top: 20px;
+      padding: 10px;
+      background: #333;
+      color: #0f0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Marquee Diagnostic Test</h1>
+  
+  <div class="test-container">
+    <div class="marquee-container">
+      <div class="marquee-row">
+        <div class="marquee-content">
+          <img src="/Cute Dumpling Icon.png" alt="1" />
+          <img src="/Cute Dumpling Icon.png" alt="2" />
+          <img src="/Cute Dumpling Icon.png" alt="3" />
+          <img src="/Cute Dumpling Icon.png" alt="4" />
+          <img src="/Cute Dumpling Icon.png" alt="5" />
+        </div>
+        <div class="marquee-content">
+          <img src="/Cute Dumpling Icon.png" alt="6" />
+          <img src="/Cute Dumpling Icon.png" alt="7" />
+          <img src="/Cute Dumpling Icon.png" alt="8" />
+          <img src="/Cute Dumpling Icon.png" alt="9" />
+          <img src="/Cute Dumpling Icon.png" alt="10" />
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="log"></div>
+  
+  <script>
+    const log = document.getElementById('log');
+    
+    function addLog(msg) {
+      const line = document.createElement('div');
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    }
+    
+    addLog('Page loaded');
+    
+    const container = document.querySelector('.marquee-container');
+    const row = document.querySelector('.marquee-row');
+    const content = document.querySelector('.marquee-content');
+    const images = document.querySelectorAll('img');
+    
+    addLog(`Found ${images.length} images`);
+    addLog(`Container exists: ${!!container}`);
+    addLog(`Row exists: ${!!row}`);
+    addLog(`Content exists: ${!!content}`);
+    
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      addLog(`Container rect: ${rect.width}x${rect.height} at (${rect.left}, ${rect.top})`);
+      const styles = getComputedStyle(container);
+      addLog(`Container display: ${styles.display}`);
+      addLog(`Container visibility: ${styles.visibility}`);
+      addLog(`Container opacity: ${styles.opacity}`);
+    }
+    
+    images.forEach((img, i) => {
+      img.addEventListener('load', () => {
+        addLog(`Image ${i+1} loaded: ${img.naturalWidth}x${img.naturalHeight}`);
+      });
+      img.addEventListener('error', (e) => {
+        addLog(`Image ${i+1} FAILED to load: ${img.src}`);
+      });
+      
+      if (img.complete) {
+        if (img.naturalWidth > 0) {
+          addLog(`Image ${i+1} already loaded: ${img.naturalWidth}x${img.naturalHeight}`);
+        } else {
+          addLog(`Image ${i+1} failed (already checked)`);
+        }
+      }
+    });
+    
+    setTimeout(() => {
+      if (content) {
+        const contentRect = content.getBoundingClientRect();
+        addLog(`Content rect after 1s: ${contentRect.width}x${contentRect.height} at (${contentRect.left}, ${contentRect.top})`);
+        const contentStyles = getComputedStyle(content);
+        addLog(`Content animation: ${contentStyles.animation}`);
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

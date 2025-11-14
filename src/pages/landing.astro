@@ -1,0 +1,554 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+// Using public folder for media assets
+const bgmAudio = '/Little Happiness from YouTube.mp3';
+const click1Sound = '/Click1-MP3.mp3';
+const pop1Sound = '/Pop1-MP3.mp3';
+const pop2Sound = '/pop2-MP3.mp3';
+---
+
+<BaseLayout title="Welcome" description="Welcome to your special space">
+  <!-- Absolute background wrapper with PixiJS canvas -->
+  <div class="absolute inset-0 size-full" style="z-index: 0; background-color: #faf8f3;">
+    <canvas id="pixi-canvas" style="pointer-events: none;"></canvas>
+  </div>
+
+  <!-- Background music - autoplay -->
+  <audio id="bgm" autoplay loop>
+    <source src={bgmAudio} type="audio/mpeg" />
+  </audio>
+
+  <!-- Sound Effects -->
+  <audio id="click1" src={click1Sound} preload="auto"></audio>
+  <audio id="pop1" src={pop1Sound} preload="auto"></audio>
+  <audio id="pop2" src={pop2Sound} preload="auto"></audio>
+
+  <!-- Main content container (single page app - no scroll) -->
+  <div id="canvas" class="relative max-h-dvh max-w-dvw flex-1 items-center justify-center min-h-dvh p-4" style="z-index: 1;">
+
+    <!-- Main Media Container with Icon Buttons -->
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl md:aspect-video aspect-[9/16] rounded-lg overflow-hidden backdrop-blur-sm shadow-2xl">
+        <img src="/background.jpg" alt="Main Media" class="w-full h-full object-cover" />
+
+      <!-- Icon Button - Top Left (Music Control) -->
+      <button
+        id="musicBtn"
+        class="absolute -top-8 -left-8 w-24 h-24 bg-red-400/90 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+      >
+        <span class="text-2xl" id="musicIcon">⏸️</span>
+      </button>
+
+      <!-- Icon Button - Top Right (Window 1) -->
+      <button
+        id="window1Btn"
+        class="absolute -top-8 -right-8 w-24 h-24 bg-red-400/90 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+      >
+        <span class="text-2xl">📁</span>
+      </button>
+
+      <!-- Icon Button - Bottom Left (Window 2) -->
+      <button
+        id="window2Btn"
+        class="absolute -bottom-8 -left-8 w-24 h-24 bg-pink-400/90 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+      >
+        <span class="text-2xl">🖼️</span>
+      </button>
+
+      <!-- Icon Button - Bottom Right (Window 3) -->
+      <button
+        id="window3Btn"
+        class="absolute -bottom-8 -right-8 w-24 h-24 bg-pink-400/90 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+      >
+        <span class="text-2xl">⚙️</span>
+      </button>
+
+    </div>
+
+    <!-- Draggable Windows (inside canvas) -->
+    <!-- Window 1 -->
+    <div id="window1" class="absolute top-1/4 left-1/4 w-96 bg-white rounded-lg shadow-2xl hidden z-50">
+    <div class="window-titlebar bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-3 rounded-t-lg flex justify-between items-center cursor-move">
+      <span class="font-semibold">Window 1</span>
+      <button class="close-btn hover:bg-white/20 rounded px-2 py-1 transition-colors" data-window="window1">✕</button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700">Window 1 content goes here...</p>
+    </div>
+  </div>
+
+    <!-- Window 2 -->
+    <div id="window2" class="absolute top-1/3 left-1/3 w-96 bg-white rounded-lg shadow-2xl hidden z-50">
+    <div class="window-titlebar bg-gradient-to-r from-pink-500 to-rose-500 text-white px-4 py-3 rounded-t-lg flex justify-between items-center cursor-move">
+      <span class="font-semibold">Window 2</span>
+      <button class="close-btn hover:bg-white/20 rounded px-2 py-1 transition-colors" data-window="window2">✕</button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700">Window 2 content goes here...</p>
+    </div>
+  </div>
+
+    <!-- Window 3 -->
+    <div id="window3" class="absolute top-1/2 left-1/2 w-96 bg-white rounded-lg shadow-2xl hidden z-50">
+    <div class="window-titlebar bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-3 rounded-t-lg flex justify-between items-center cursor-move">
+      <span class="font-semibold">Window 3</span>
+      <button class="close-btn hover:bg-white/20 rounded px-2 py-1 transition-colors" data-window="window3">✕</button>
+    </div>
+    <div class="p-6">
+      <p class="text-gray-700">Window 3 content goes here...</p>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- PixiJS Marquee Script -->
+  <script>
+    import * as PIXI from 'pixi.js';
+    import gsap from 'gsap';
+    import { Draggable } from 'gsap/Draggable';
+
+    // Register GSAP plugins
+    gsap.registerPlugin(Draggable);
+
+    // ===== CONFIGURATION CONSTANTS =====
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+    const CONFIG = {
+      desktop: {
+        numRows: 10,
+        numCols: 16,
+        spriteSize: 20,
+        gap: 80,
+        fadeWidth: 150,
+        hoverRadius: 60,
+        maxParticles: 100,
+        rotationSpeed: 0.02, // Rotation wobble speed
+        rotationAmount: 0.3  // Max rotation in radians (~17 degrees)
+      },
+      mobile: {
+        numRows: 8,
+        numCols: 6,
+        spriteSize: 16,
+        gap: 60,
+        fadeWidth: 75,
+        hoverRadius: 80,
+        maxParticles: 50,
+        rotationSpeed: 0.02,
+        rotationAmount: 0.3
+      }
+    };
+
+    const settings = isMobile ? CONFIG.mobile : CONFIG.desktop;
+
+    // ===== PIXIJS GRID SETUP =====
+    let pixiApp: PIXI.Application;
+    let dumplingTexture: PIXI.Texture;
+    const sprites: any[] = [];
+    const particles: any[] = [];
+    const particlePool: any[] = [];
+    let mouseX = 0;
+    let mouseY = 0;
+    const hoveredSprites = new Set();
+
+    async function initPixiMarquee() {
+      const canvas = document.getElementById('pixi-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+
+      // Create PixiJS application
+      pixiApp = new PIXI.Application();
+      await pixiApp.init({
+        canvas,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        backgroundAlpha: 0,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+
+      // Load dumpling texture and pre-process to half size
+      const originalTexture = await PIXI.Assets.load('/cute-dumpling-icon.png');
+
+      // Create a smaller version of the texture (50% scale)
+      const textureCanvas = document.createElement('canvas');
+      const textureCtx = textureCanvas.getContext('2d');
+      const img = originalTexture.source.resource as HTMLImageElement;
+      textureCanvas.width = img.width * 0.5;
+      textureCanvas.height = img.height * 0.5;
+      textureCtx?.drawImage(img, 0, 0, textureCanvas.width, textureCanvas.height);
+
+      dumplingTexture = PIXI.Texture.from(textureCanvas);
+
+      // Create static grid layout
+      const { numRows, numCols, spriteSize, gap, fadeWidth } = settings;
+
+      // Calculate grid dimensions and center it
+      const gridWidth = numCols * (spriteSize + gap) - gap;
+      const gridHeight = numRows * (spriteSize + gap) - gap;
+      const startX = (window.innerWidth - gridWidth) / 2;
+      const startY = (window.innerHeight - gridHeight) / 2;
+
+      // Create grid of dumplings
+      for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+          const sprite = new PIXI.Sprite(dumplingTexture);
+          sprite.anchor.set(0.5);
+          sprite.width = spriteSize;
+          sprite.height = spriteSize;
+          sprite.alpha = 0.6;
+
+          // Position in grid
+          sprite.x = startX + col * (spriteSize + gap) + spriteSize / 2;
+          sprite.y = startY + row * (spriteSize + gap) + spriteSize / 2;
+
+          // Store animation properties
+          (sprite as any).baseX = sprite.x;
+          (sprite as any).baseY = sprite.y;
+          (sprite as any).bobOffset = Math.random() * Math.PI * 2;
+          (sprite as any).rotationOffset = Math.random() * Math.PI * 2;
+          (sprite as any).baseRotation = (Math.random() - 0.5) * 0.17; // Initial rotation
+
+          // Add subtle scale variation
+          sprite.scale.set(0.9 + Math.random() * 0.2);
+
+          sprites.push(sprite);
+          pixiApp.stage.addChild(sprite);
+        }
+      }
+
+      // Add gradient fade overlays using canvas for better performance
+      const leftFadeCanvas = document.createElement('canvas');
+      leftFadeCanvas.width = fadeWidth;
+      leftFadeCanvas.height = window.innerHeight;
+      const leftCtx = leftFadeCanvas.getContext('2d');
+      if (leftCtx) {
+        const leftGradient = leftCtx.createLinearGradient(0, 0, fadeWidth, 0);
+        leftGradient.addColorStop(0, 'rgba(250, 248, 243, 1)');
+        leftGradient.addColorStop(1, 'rgba(250, 248, 243, 0)');
+        leftCtx.fillStyle = leftGradient;
+        leftCtx.fillRect(0, 0, fadeWidth, window.innerHeight);
+      }
+      const leftFadeSprite = new PIXI.Sprite(PIXI.Texture.from(leftFadeCanvas));
+      leftFadeSprite.x = 0;
+      leftFadeSprite.y = 0;
+      pixiApp.stage.addChild(leftFadeSprite);
+
+      const rightFadeCanvas = document.createElement('canvas');
+      rightFadeCanvas.width = fadeWidth;
+      rightFadeCanvas.height = window.innerHeight;
+      const rightCtx = rightFadeCanvas.getContext('2d');
+      if (rightCtx) {
+        const rightGradient = rightCtx.createLinearGradient(0, 0, fadeWidth, 0);
+        rightGradient.addColorStop(0, 'rgba(250, 248, 243, 0)');
+        rightGradient.addColorStop(1, 'rgba(250, 248, 243, 1)');
+        rightCtx.fillStyle = rightGradient;
+        rightCtx.fillRect(0, 0, fadeWidth, window.innerHeight);
+      }
+      const rightFadeSprite = new PIXI.Sprite(PIXI.Texture.from(rightFadeCanvas));
+      rightFadeSprite.x = window.innerWidth - fadeWidth;
+      rightFadeSprite.y = 0;
+      pixiApp.stage.addChild(rightFadeSprite);
+
+      // Track mouse/touch position for hover and parallax
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      // Add touch support for mobile
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+          mouseX = e.touches[0].clientX;
+          mouseY = e.touches[0].clientY;
+        }
+      });
+
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+          mouseX = e.touches[0].clientX;
+          mouseY = e.touches[0].clientY;
+        }
+      });
+
+      // Animation loop
+      pixiApp.ticker.add((ticker) => {
+        animateSprites(ticker);
+        updateParticles(ticker);
+        checkHoverAndSpawnParticles();
+      });
+
+      // Handle resize
+      window.addEventListener('resize', () => {
+        pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
+
+        // Recalculate grid position
+        const gridWidth = numCols * (spriteSize + gap) - gap;
+        const gridHeight = numRows * (spriteSize + gap) - gap;
+        const newStartX = (window.innerWidth - gridWidth) / 2;
+        const newStartY = (window.innerHeight - gridHeight) / 2;
+
+        // Reposition all sprites
+        let index = 0;
+        for (let row = 0; row < numRows; row++) {
+          for (let col = 0; col < numCols; col++) {
+            const sprite = sprites[index];
+            sprite.x = newStartX + col * (spriteSize + gap) + spriteSize / 2;
+            sprite.y = newStartY + row * (spriteSize + gap) + spriteSize / 2;
+            (sprite as any).baseX = sprite.x;
+            (sprite as any).baseY = sprite.y;
+            index++;
+          }
+        }
+      });
+    }
+
+    function animateSprites(ticker: any) {
+      const time = Date.now() * 0.001;
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      sprites.forEach((sprite: any) => {
+        // Gentle bobbing animation
+        const bobAmount = Math.sin(time + sprite.bobOffset) * 3;
+        sprite.y = sprite.baseY + bobAmount;
+
+        // Rotational wobble
+        const rotationWobble = Math.sin(time * settings.rotationSpeed + sprite.rotationOffset) * settings.rotationAmount;
+        sprite.rotation = sprite.baseRotation + rotationWobble;
+
+        // Subtle parallax effect based on distance from center
+        const distanceFromCenterX = sprite.baseX - centerX;
+        const distanceFromCenterY = sprite.baseY - centerY;
+        const parallaxStrength = 0.01;
+
+        const parallaxX = (mouseX - centerX) * parallaxStrength;
+        const parallaxY = (mouseY - centerY) * parallaxStrength;
+
+        sprite.x = sprite.baseX + parallaxX * 0.5;
+        sprite.y = sprite.baseY + bobAmount + parallaxY * 0.5;
+      });
+    }
+
+    function checkHoverAndSpawnParticles() {
+      hoveredSprites.clear();
+
+      sprites.forEach((sprite: any) => {
+        const distance = Math.sqrt(
+          Math.pow(mouseX - sprite.x, 2) + Math.pow(mouseY - sprite.y, 2)
+        );
+
+        if (distance < settings.hoverRadius) {
+          hoveredSprites.add(sprite);
+
+          // Spawn steam particles (limited rate)
+          if (Math.random() < 0.2) {
+            spawnSteamParticle(sprite.x, sprite.y);
+          }
+        }
+      });
+    }
+
+    function spawnSteamParticle(x: number, y: number) {
+      if (particles.length > settings.maxParticles) return;
+
+      let particle;
+
+      if (particlePool.length > 0) {
+        particle = particlePool.pop();
+        particle.visible = true;
+      } else {
+        // Simplified cloud particle - single soft circle for better performance
+        const graphics = new PIXI.Graphics();
+        const size = 12 + Math.random() * 6;
+
+        // Create soft radial gradient with fewer layers
+        for (let j = 0; j < 3; j++) {
+          const radius = size * (1 - j * 0.25);
+          const alpha = 0.15 * (1 - j * 0.3);
+          graphics.circle(0, 0, radius);
+          graphics.fill({ color: 0xffffff, alpha });
+        }
+
+        pixiApp.stage.addChild(graphics);
+        particle = graphics;
+        (particle as any).baseSize = size;
+      }
+
+      particle.x = x;
+      particle.y = y;
+      particle.alpha = 1;
+      particle.scale.set(0.5 + Math.random() * 0.5);
+      (particle as any).velocity = {
+        x: (Math.random() - 0.5) * 1,
+        y: -1.5 - Math.random() * 1
+      };
+      (particle as any).wobbleTime = 0;
+      (particle as any).lifespan = 1.5 + Math.random() * 0.5;
+      (particle as any).age = 0;
+      (particle as any).rotation = Math.random() * Math.PI * 2;
+      (particle as any).rotationSpeed = (Math.random() - 0.5) * 0.02;
+
+      particles.push(particle);
+    }
+
+    function updateParticles(ticker: any) {
+      const deltaTime = ticker.deltaTime / 60;
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
+        particle.age += deltaTime;
+
+        if (particle.age >= particle.lifespan) {
+          particle.visible = false;
+          particles.splice(i, 1);
+          particlePool.push(particle);
+          continue;
+        }
+
+        // Update particle position with wobble
+        particle.y += particle.velocity.y * ticker.deltaTime;
+        particle.wobbleTime += deltaTime;
+        particle.x += particle.velocity.x * ticker.deltaTime + Math.sin(particle.wobbleTime * 3) * 0.8;
+
+        // Gentle rotation for cloud effect
+        particle.rotation += particle.rotationSpeed * ticker.deltaTime;
+
+        // Fade out and scale up for dissipating cloud effect
+        const ageRatio = particle.age / particle.lifespan;
+        const fadeStart = 0.3; // Start fading after 30% of lifespan
+        const fadeProgress = Math.max(0, (ageRatio - fadeStart) / (1 - fadeStart));
+        particle.alpha = 1 - fadeProgress;
+
+        // Scale up gradually to simulate expansion
+        particle.scale.set((0.5 + Math.random() * 0.5) * (1 + ageRatio * 1.5));
+      }
+    }
+
+    // Initialize PixiJS when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initPixiMarquee);
+    } else {
+      initPixiMarquee();
+    }
+
+    // ===== AUDIO & INTERACTION SETUP =====
+    const bgm = document.getElementById('bgm') as HTMLAudioElement;
+    const click1 = document.getElementById('click1') as HTMLAudioElement;
+    const pop1 = document.getElementById('pop1') as HTMLAudioElement;
+    const pop2 = document.getElementById('pop2') as HTMLAudioElement;
+
+    const musicBtn = document.getElementById('musicBtn');
+    const musicIcon = document.getElementById('musicIcon');
+    let isPlaying = true;
+
+    // Try to play BGM on load
+    bgm.play().catch(() => {
+      isPlaying = false;
+      if (musicIcon) musicIcon.textContent = '▶️';
+
+      const playOnInteraction = () => {
+        bgm.play();
+        isPlaying = true;
+        if (musicIcon) musicIcon.textContent = '⏸️';
+        document.removeEventListener('click', playOnInteraction);
+      };
+      document.addEventListener('click', playOnInteraction);
+    });
+
+    // Music button click handler
+    musicBtn?.addEventListener('click', () => {
+      click1.currentTime = 0;
+      click1.play();
+
+      if (isPlaying) {
+        bgm.pause();
+        pop1.currentTime = 0;
+        pop1.play();
+        if (musicIcon) musicIcon.textContent = '▶️';
+      } else {
+        bgm.play();
+        pop2.currentTime = 0;
+        pop2.play();
+        if (musicIcon) musicIcon.textContent = '⏸️';
+      }
+      isPlaying = !isPlaying;
+    });
+
+    // Window management
+    const windows = {
+      window1: document.getElementById('window1'),
+      window2: document.getElementById('window2'),
+      window3: document.getElementById('window3')
+    };
+
+    function openWindow(windowId: string) {
+      const win = windows[windowId as keyof typeof windows];
+      if (win) {
+        win.classList.remove('hidden');
+        gsap.fromTo(win,
+          { scale: 0, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.7)' }
+        );
+      }
+    }
+
+    function closeWindow(windowId: string) {
+      const win = windows[windowId as keyof typeof windows];
+      if (win) {
+        pop2.currentTime = 0;
+        pop2.play();
+        gsap.to(win, {
+          scale: 0,
+          opacity: 0,
+          duration: 0.2,
+          ease: 'power2.in',
+          onComplete: () => {
+            win.classList.add('hidden');
+          }
+        });
+      }
+    }
+
+    // Window button click handlers
+    document.getElementById('window1Btn')?.addEventListener('click', () => {
+      click1.currentTime = 0;
+      click1.play();
+      openWindow('window1');
+    });
+
+    document.getElementById('window2Btn')?.addEventListener('click', () => {
+      click1.currentTime = 0;
+      click1.play();
+      openWindow('window2');
+    });
+
+    document.getElementById('window3Btn')?.addEventListener('click', () => {
+      click1.currentTime = 0;
+      click1.play();
+      openWindow('window3');
+    });
+
+    // Close button handlers
+    document.querySelectorAll('.close-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const windowId = (btn as HTMLElement).dataset.window;
+        if (windowId) {
+          closeWindow(windowId);
+        }
+      });
+    });
+
+    // Make windows draggable
+    Object.values(windows).forEach((win) => {
+      if (win) {
+        Draggable.create(win, {
+          trigger: win.querySelector('.window-titlebar'),
+          bounds: '#canvas',
+          type: 'x,y',
+          edgeResistance: 0.65,
+          inertia: true
+        });
+      }
+    });
+  </script>
+</BaseLayout>

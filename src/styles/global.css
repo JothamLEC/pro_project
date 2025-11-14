@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@import "./starwind.css";
+
+@layer base {
+    /* Hazelnut Milk Tea - Regular */
+    @font-face {
+        font-family: "Hazelnut Milk Tea";
+        src: url("../assets/Hazelnut Milk Tea.ttf") format("truetype");
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+    }
+
+    /* Hazelnut Milk Tea - Italic */
+    @font-face {
+        font-family: "Hazelnut Milk Tea";
+        src: url("../assets/Hazelnut Milk Tea Italic.ttf") format("truetype");
+        font-weight: normal;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    /* Hazelnut Milk Tea - Bold */
+    @font-face {
+        font-family: "Hazelnut Milk Tea";
+        src: url("../assets/Hazelnut Milk Tea Bold.ttf") format("truetype");
+        font-weight: bold;
+        font-style: normal;
+        font-display: swap;
+    }
+
+    /* Hazelnut Milk Tea - Bold Italic */
+    @font-face {
+        font-family: "Hazelnut Milk Tea";
+        src: url("../assets/Hazelnut Milk Tea Bold Italic.ttf")
+            format("truetype");
+        font-weight: bold;
+        font-style: italic;
+        font-display: swap;
+    }
+
+    body {
+        font-family: "Hazelnut Milk Tea", cursive, sans-serif;
+        letter-spacing: 3px;
+    }
+}

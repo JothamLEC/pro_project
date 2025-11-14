@@ -1,0 +1,1040 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Card from '@/components/starwind/card/Card.astro';
+import CardContent from '@/components/starwind/card/CardContent.astro';
+import Input from '@/components/starwind/input/Input.astro';
+import Button from '@/components/starwind/button/Button.astro';
+
+// Password Protection
+const correctPassword = "2018-03-03";
+
+// Using public folder for media assets
+const bgmAudio = '/Little Happiness from YouTube.mp3';
+const click1Sound = '/Click1-MP3.mp3';
+const pop1Sound = '/Pop1-MP3.mp3';
+const pop2Sound = '/pop2-MP3.mp3';
+---
+
+<BaseLayout title="Welcome" description="Welcome to your special space">
+  <!-- Landing Page Content (underneath overlay) -->
+  <div id="landingContent" class="fixed inset-0 w-full h-full" style="z-index: 0;">
+    <!-- Absolute background wrapper with PixiJS canvas -->
+    <div class="absolute inset-0 size-full" style="background-color: #faf8f3;">
+      <canvas id="pixi-canvas" style="pointer-events: none;"></canvas>
+    </div>
+
+    <!-- Background music - will be loaded lazily -->
+    <audio id="bgm" loop>
+      <source src={bgmAudio} type="audio/mpeg" />
+    </audio>
+
+    <!-- Sound Effects -->
+    <audio id="click1" preload="auto">
+      <source src={click1Sound} type="audio/mpeg" />
+    </audio>
+    <audio id="pop1" preload="auto">
+      <source src={pop1Sound} type="audio/mpeg" />
+    </audio>
+    <audio id="pop2" preload="auto">
+      <source src={pop2Sound} type="audio/mpeg" />
+    </audio>
+
+    <!-- Main content container (single page app - no scroll) -->
+    <div id="canvas" class="relative max-h-dvh max-w-dvw flex-1 items-center justify-center min-h-dvh p-4" style="z-index: 1;">
+
+      <!-- Main Media Container with Icon Buttons -->
+      <!-- Outer white frame with violet border -->
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white border-6 border-violet-400 rounded-2xl
+          shadow-2xl shadow-pink-300/20 p-0">
+
+        <!-- Inner image wrapper with padding -->
+        <div class="relative w-full h-full p-12">
+            <div class="p-10">
+                <img src="/background.jpg" alt="Main Media" class="w-full h-full object-cover rounded shadow-md border-4 border-indigo-300" /
+            </div>
+
+          <!-- Icon Button - Top Left (Music Control) -->
+          <button
+            id="musicBtn"
+            class="absolute top-2 left-2 p-4 bg-white/50 backdrop-blur-md border-4 border-violet-300 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+          >
+            <img id="musicIcon" src="/speaker-simple-high-bold.svg" alt="Music" class="w-10 h-10 text-violet-400" style="filter: invert(56%) sepia(48%) saturate(1846%) hue-rotate(215deg) brightness(95%) contrast(91%);" />
+          </button>
+
+          <!-- Icon Button - Top Right (Fullscreen Video) -->
+          <button
+            id="fullscreenVideoBtn"
+            class="absolute top-2 right-2 p-4 bg-white/50 backdrop-blur-md border-4 border-violet-300 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+          >
+            <img src="/monitor-play-bold.svg" alt="Play Video" class="w-10 h-10" style="filter: invert(56%) sepia(48%) saturate(1846%) hue-rotate(215deg) brightness(95%) contrast(91%);" />
+          </button>
+
+          <!-- Icon Button - Bottom Left (Window 2) -->
+          <button
+            id="window2Btn"
+            class="absolute bottom-2 left-2 p-4 bg-white/50 backdrop-blur-md border-4 border-violet-300 rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer z-10"
+          >
+            <img src="/Heart Icon.svg" alt="Heart" class="w-10 h-10" style="filter: invert(56%) sepia(48%) saturate(1846%) hue-rotate(215deg) brightness(95%) contrast(91%);" />
+          </button>
+
+          <!-- Date Display - Bottom Right -->
+          <div
+            class="absolute bottom-2 right-2 px-4 py-2 bg-white/50 flex items-center justify-center z-10"
+          >
+            <span class="text-violet-600 font-semibold text-sm">13th November 2025</span>
+          </div>
+
+          <!-- Hidden fullscreen iframe for YouTube -->
+          <iframe
+            id="fullscreenVideo"
+            class="fixed inset-0 w-full h-full bg-black hidden z-[200]"
+            src="about:blank"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+
+      <!-- Draggable Windows (inside canvas) -->
+      <!-- Window 2 (Indigo) -->
+      <div id="window2" class="absolute top-1/3 left-1/3 w-[600px] max-h-[70vh] bg-white rounded-2xl shadow-2xl hidden z-50 border-2 border-indigo-300 flex flex-col">
+        <div class="window-titlebar bg-indigo-100 border-b-2 border-indigo-300 px-4 py-3 rounded-t-2xl flex justify-between items-center cursor-move flex-shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1.5">
+              <div class="w-3 h-3 rounded-full bg-indigo-300"></div>
+              <div class="w-3 h-3 rounded-full bg-indigo-300"></div>
+              <div class="w-3 h-3 rounded-full bg-indigo-300"></div>
+              <div class="w-3 h-3 rounded-full bg-indigo-300"></div>
+            </div>
+            <span class="font-semibold text-indigo-800 ml-2">A Letter For You</span>
+          </div>
+          <button class="close-btn w-6 h-6 rounded-full bg-indigo-400 hover:bg-indigo-500 flex items-center justify-center transition-colors" data-window="window2">
+            <span class="text-white text-sm font-bold">✕</span>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+            <div class="tracking-normal [&_li]:list-disc [&_li]:ml-6 [&_p]:mb-4 prose prose-base text-gray-700 max-w-none">
+            <p>It took me a while, but I finally got around to making the video of our Taiwan trip.</p>
+
+            <p>I realised that the trip's experience mirrors the story of our relationship a lot.</p>
+
+            <ul>
+              <li>It started out spontaneous</li>
+              <li>It devolved into chaos halfway through</li>
+              <li>It ended as an awesome experience and us growing closer together</li>
+              <li>We had fights</li>
+              <li>We made up</li>
+              <li>I was clumsy</li>
+              <li>You were decisive</li>
+              <li>I was flexible</li>
+              <li>You were stubborn</li>
+              <li>I was your calm</li>
+              <li>You were my warmth</li>
+            </ul>
+
+            <p>And nowhere was your warmth more radiant than during this trip.</p>
+
+            <p>You were always smiling, bubbly, dynamic<br />
+            and I get to see it over, and over, and over again editing this video,</p>
+
+            <p>so much so that I was overwhelmed with tears several times making this.</p>
+
+            <p>"This is someone I want to be with for the rest of my life," was what I thought editing this video from minute one all the way to the end.<br />
+            "This is someone I want to be with for the rest of my life," was what I thought the moment we first got onto a video call eight years ago.</p>
+
+            <p>You ask me many times, why I love you.</p>
+
+            <p>I'm rubbish at expressing myself through words, even though I do it for a loving.</p>
+
+            <p>So I thought it best to show you through the medium I know best:</p>
+
+            <p>visuals, audio, editing, web design,<br />
+            and most of all</p>
+
+            <p>sleepless nights obsessing over details to get it just right.</p>
+
+            <p>And I want us to be just right as well.</p>
+
+            <p>Proposing to you was hard -- paralysing even -- because I want it to be just right.</p>
+
+            <p>But I just have to be me, the same way that you just have to be you -- for me to love you.</p>
+
+            <p>This boyfriend/girlfriend project is long overdue, and I need to <code>git push</code> this commit and complete this JIRA ticket.</p>
+
+            <p>I'm sorry for making you wait this long.</p>
+
+            <p>You are the most important person in my life.</p>
+
+            <p>You are my favourite person in my life.<br />
+            And I want you to be my forever in my life.</p>
+
+            <p>Please marry me and be my wife.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Overlay (sits on top) -->
+  <div id="passwordOverlay" class="fixed inset-0 w-full h-full overflow-hidden bg-gradient-to-br from-purple-50 via-purple-100 to-indigo-50 flex items-center justify-center transition-transform duration-1000" style="z-index: 100;">
+    <!-- Lock Container -->
+    <div id="lockContainer" class="flex flex-col items-center justify-center p-8 max-w-lg w-[90%] transition-all duration-500">
+
+      <!-- Lock Icon -->
+      <div id="lockIcon" class="relative w-20 h-20 mb-8 transition-transform duration-300">
+        <!-- Lock Shackle -->
+        <div id="lockShackle" class="border-4 border-gray-400 absolute top-0 left-5 w-10 h-9 border-8 border-white border-b-0 rounded-t-[20px] shadow-[0_-2px_10px_rgba(0,0,0,0.1)] transition-transform duration-500"></div>
+
+        <!-- Lock Body -->
+        <div class="absolute bottom-0 left-2.5 w-[60px] h-[50px] bg-yellow-400 border-4 border-yellow-600/20 rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+          <!-- Keyhole -->
+          <div class="absolute top-[15px] left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full">
+            <div class="absolute top-1.5 left-0.5 w-1 h-[15px] bg-primary"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <h1 class="text-pink-400 text-3xl md:text-4xl font-semibold mb-4 text-center">
+        The You I See
+      </h1>
+      <p class="text-pink-400/90 text-bold md:text-lg mb-8 text-center tracking-normal">
+        When's our REAL official date we got together?
+      </p>
+
+      <p class="text-pink-400/90 text-bold text-base mb-8 text-center tracking-normal">
+          format: 1996-05-15
+      </p>
+      <!-- Password Form Card -->
+      <Card class="w-full bg-white/95 backdrop-blur border-white/30">
+        <CardContent class="p-6">
+          <form id="passwordForm" class="space-y-4">
+            <Input
+              type="password"
+              id="password-input"
+              placeholder="Password"
+              class="text-center text-lg tracking-wider transition-all duration-300 focus:scale-[1.02]"
+              autocomplete="off"
+              autofocus
+            />
+
+            <Button
+              type="submit"
+              class="w-full text-lg font-semibold transition-transform duration-300 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              Unlock
+            </Button>
+
+            <!-- Error Message -->
+            <div
+              id="errorMessage"
+              class="opacity-0 -translate-y-2 transition-all duration-300 text-error bg-white/95 p-3 rounded-lg text-center text-sm"
+            >
+              Incorrect password. Try again!
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Unlock Overlay -->
+    <div
+      id="unlockOverlay"
+      class="fixed inset-0 bg-white flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 z-[1000]"
+    >
+      <div
+        id="unlockMessage"
+        class="text-4xl md:text-5xl text-primary font-bold text-center scale-0 transition-transform duration-500"
+      >
+        Unlocked! ✨
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Authentication Script (inline with define:vars) -->
+  <script is:inline define:vars={{ correctPassword }}>
+    // Check if already authenticated
+    const AUTH_KEY = 'authenticated';
+    const isAuthenticated = sessionStorage.getItem(AUTH_KEY) === 'true';
+
+    if (isAuthenticated) {
+      // Already authenticated - hide password overlay immediately
+      const passwordOverlay = document.getElementById('passwordOverlay');
+      if (passwordOverlay) {
+        passwordOverlay.style.display = 'none';
+      }
+      // Signal that landing page should initialize
+      window.__shouldInitLanding = true;
+    } else {
+      window.__shouldInitLanding = false;
+      // Start lazy loading assets in background
+      startBackgroundLoading();
+    }
+
+    // Background loading function
+    function startBackgroundLoading() {
+      // Preload audio files
+      const bgm = document.getElementById('bgm');
+      const click1 = document.getElementById('click1');
+      const pop1 = document.getElementById('pop1');
+      const pop2 = document.getElementById('pop2');
+
+      if (bgm) bgm.load();
+      if (click1) click1.load();
+      if (pop1) pop1.load();
+      if (pop2) pop2.load();
+
+      // Preload images
+      const imagesToPreload = [
+        '/background.jpg',
+        '/cute-dumpling-icon.png'
+      ];
+
+      imagesToPreload.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+
+    // Wait for DOM and GSAP to be ready
+    function initPasswordForm() {
+      // Check if GSAP is available
+      if (typeof window.gsap === 'undefined') {
+        console.error('GSAP not loaded yet, retrying...');
+        setTimeout(initPasswordForm, 100);
+        return;
+      }
+
+      const gsap = window.gsap;
+      const form = document.getElementById('passwordForm');
+      const input = document.getElementById('password-input');
+      const errorMessage = document.getElementById('errorMessage');
+      const lockIcon = document.getElementById('lockIcon');
+      const lockShackle = document.getElementById('lockShackle');
+      const lockContainer = document.getElementById('lockContainer');
+      const unlockOverlay = document.getElementById('unlockOverlay');
+      const unlockMessage = document.getElementById('unlockMessage');
+      const passwordOverlay = document.getElementById('passwordOverlay');
+
+      if (!form || !input) {
+        console.error('Form elements not found');
+        return;
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const enteredPassword = input.value.trim();
+
+        if (enteredPassword === correctPassword) {
+          // Correct password - unlock animation with GSAP
+          errorMessage.classList.remove('opacity-100', 'translate-y-0');
+          errorMessage.classList.add('opacity-0', '-translate-y-2');
+
+          // Unlock the shackle with GSAP
+          gsap.to(lockShackle, {
+            x: 15,
+            rotation: -15,
+            duration: 0.5,
+            ease: "power2.out"
+          });
+
+          // Fade out lock container
+          setTimeout(() => {
+            gsap.to(lockContainer, {
+              opacity: 0,
+              scale: 0.8,
+              duration: 0.5,
+              ease: "power2.inOut"
+            });
+
+            // Show unlock overlay
+            unlockOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            unlockOverlay.classList.add('opacity-100', 'pointer-events-auto');
+
+            // Animate unlock message with GSAP bounce
+            gsap.to(unlockMessage, {
+              scale: 1,
+              duration: 0.5,
+              ease: "back.out(1.7)"
+            });
+          }, 300);
+
+          // Initialize landing page early (during animation) to prevent flicker
+          setTimeout(async () => {
+            // Save authentication state
+            sessionStorage.setItem(AUTH_KEY, 'true');
+
+            // Start initializing landing page NOW (before slide-up)
+            window.__shouldInitLanding = true;
+            if (window.__initLandingPageFunc) {
+              // Wait for landing page to initialize
+              await window.__initLandingPageFunc();
+              console.log('Landing page initialized successfully');
+            }
+
+            // Wait a bit more to ensure everything is rendered
+            setTimeout(() => {
+              // Fade out the entire password overlay directly (no slide-up)
+              gsap.to(passwordOverlay, {
+                opacity: 0,
+                duration: 0.8,
+                ease: "power2.inOut",
+                onComplete: () => {
+                  passwordOverlay.style.display = 'none';
+                }
+              });
+            }, 400);
+          }, 800);
+
+        } else {
+          // Wrong password - shake animation with GSAP
+
+          // Shake the lock icon
+          gsap.to(lockIcon, {
+            x: -10,
+            duration: 0.1,
+            yoyo: true,
+            repeat: 5,
+            ease: "power1.inOut",
+            onComplete: () => {
+              gsap.set(lockIcon, { x: 0 });
+            }
+          });
+
+          // Shake the input
+          gsap.to(input, {
+            x: -10,
+            duration: 0.1,
+            yoyo: true,
+            repeat: 5,
+            ease: "power1.inOut",
+            onComplete: () => {
+              gsap.set(input, { x: 0 });
+            }
+          });
+
+          // Show error message with Tailwind classes
+          errorMessage.classList.remove('opacity-0', '-translate-y-2');
+          errorMessage.classList.add('opacity-100', 'translate-y-0');
+
+          // Clear input
+          input.value = '';
+        }
+      });
+
+      // Remove error message when user starts typing
+      input.addEventListener('input', () => {
+        errorMessage.classList.remove('opacity-100', 'translate-y-0');
+        errorMessage.classList.add('opacity-0', '-translate-y-2');
+      });
+
+      // Handle Enter key
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          form.dispatchEvent(new Event('submit'));
+        }
+      });
+    }
+
+    // Initialize when DOM is ready (only if not authenticated)
+    if (!isAuthenticated) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPasswordForm);
+      } else {
+        initPasswordForm();
+      }
+    }
+  </script>
+
+  <!-- Landing Page Script (regular module script) -->
+  <script>
+    import * as PIXI from 'pixi.js';
+    import gsap from 'gsap';
+    import { Draggable } from 'gsap/Draggable';
+
+    // Register GSAP plugins
+    gsap.registerPlugin(Draggable);
+
+    // Guard to prevent double initialization
+    let isLandingPageInitialized = false;
+
+    // Main initialization function
+    async function initLandingPage() {
+      // Prevent double initialization
+      if (isLandingPageInitialized) {
+        console.log('Landing page already initialized, skipping...');
+        return;
+      }
+
+      isLandingPageInitialized = true;
+      console.log('Initializing landing page...');
+
+      // Initialize PixiJS Marquee
+      await initPixiMarquee();
+
+      // Initialize Audio & Interactions
+      initAudioAndInteractions();
+    }
+
+    // Store function globally so inline script can call it
+    window.__initLandingPageFunc = initLandingPage;
+
+    // Auto-init if already authenticated
+    if (window.__shouldInitLanding) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLandingPage);
+      } else {
+        initLandingPage();
+      }
+    }
+
+    // ===== PIXIJS MARQUEE INITIALIZATION =====
+    async function initPixiMarquee() {
+      const canvas = document.getElementById('pixi-canvas');
+      if (!canvas) {
+        console.error('Canvas not found');
+        return;
+      }
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+      const CONFIG = {
+        desktop: {
+          numRows: 10,
+          numCols: 16,
+          spriteSize: 20,
+          gap: 80,
+          fadeWidth: 150,
+          hoverRadius: 60,
+          maxParticles: 100,
+          rotationSpeed: 0.02,
+          rotationAmount: 0.3
+        },
+        mobile: {
+          numRows: 8,
+          numCols: 6,
+          spriteSize: 16,
+          gap: 60,
+          fadeWidth: 75,
+          hoverRadius: 80,
+          maxParticles: 50,
+          rotationSpeed: 0.02,
+          rotationAmount: 0.3
+        }
+      };
+
+      const settings = isMobile ? CONFIG.mobile : CONFIG.desktop;
+
+      let pixiApp;
+      let dumplingTexture;
+      const sprites = [];
+      const particles = [];
+      const particlePool = [];
+      let mouseX = 0;
+      let mouseY = 0;
+      const hoveredSprites = new Set();
+
+      // Create PixiJS application
+      pixiApp = new PIXI.Application();
+      await pixiApp.init({
+        canvas,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        backgroundAlpha: 0,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+
+      // Load dumpling texture and pre-process to half size
+      const originalTexture = await PIXI.Assets.load('/cute-dumpling-icon.png');
+
+      // Create a smaller version of the texture (50% scale)
+      const textureCanvas = document.createElement('canvas');
+      const textureCtx = textureCanvas.getContext('2d');
+      const img = originalTexture.source.resource;
+      textureCanvas.width = img.width * 0.5;
+      textureCanvas.height = img.height * 0.5;
+      textureCtx?.drawImage(img, 0, 0, textureCanvas.width, textureCanvas.height);
+
+      dumplingTexture = PIXI.Texture.from(textureCanvas);
+
+      // Load steak texture and pre-process to half size
+      const originalSteakTexture = await PIXI.Assets.load('/kawaii-steak.png');
+
+      // Create a smaller version of the steak texture (50% scale)
+      const steakTextureCanvas = document.createElement('canvas');
+      const steakTextureCtx = steakTextureCanvas.getContext('2d');
+      const steakImg = originalSteakTexture.source.resource;
+      steakTextureCanvas.width = steakImg.width * 0.5;
+      steakTextureCanvas.height = steakImg.height * 0.5;
+      steakTextureCtx?.drawImage(steakImg, 0, 0, steakTextureCanvas.width, steakTextureCanvas.height);
+
+      const steakTexture = PIXI.Texture.from(steakTextureCanvas);
+
+      // Create diagonal lattice layout
+      const { numRows, numCols, spriteSize, gap, fadeWidth } = settings;
+
+      // Create diagonal grid pattern (diamond/lattice layout)
+      // Position sprites in a rotated grid to create diagonal rows
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      // Calculate diagonal grid spacing
+      // For a 45-degree rotation, we need spacing that accounts for both x and y
+      const diagonalSpacing = gap * 2; // spacing between sprites along diagonal (doubled for more space)
+
+      // Calculate how many rows and columns we need to fully cover the screen
+      // Need more rows/cols to account for the diagonal transformation
+      const numDiagonalRows = Math.ceil((screenHeight + screenWidth) / (diagonalSpacing / 2)) + 10;
+      const numDiagonalCols = Math.ceil((screenWidth + screenHeight) / (diagonalSpacing / 2)) + 10;
+
+      // Calculate offset to center the pattern
+      const centerOffsetX = screenWidth / 2;
+      const centerOffsetY = screenHeight / 2;
+
+      // Create sprites in a diamond grid pattern
+      for (let row = -20; row < numDiagonalRows; row++) {
+        for (let col = -20; col < numDiagonalCols; col++) {
+          // Transform grid coordinates to diagonal (diamond) layout
+          // Using 45-degree rotation: x = (col - row) * spacing, y = (col + row) * spacing/2
+          const x = (col - row) * (diagonalSpacing / 2) + centerOffsetX;
+          const y = (col + row) * (diagonalSpacing / 2);
+
+          // Only create sprite if it's within reasonable bounds (with large padding for coverage)
+          if (x > -spriteSize * 4 && x < screenWidth + spriteSize * 4 &&
+              y > -spriteSize * 4 && y < screenHeight + spriteSize * 4) {
+
+            // Alternate between dumpling and steak in a checkerboard pattern
+            const isDumpling = (row + col) % 2 === 0;
+            const texture = isDumpling ? dumplingTexture : steakTexture;
+
+            const sprite = new PIXI.Sprite(texture);
+            sprite.anchor.set(0.5);
+            sprite.width = spriteSize;
+            sprite.height = spriteSize;
+            sprite.alpha = 0.3; // Reduced opacity to 30% (50% of original 0.6)
+
+            // Position
+            sprite.x = x;
+            sprite.y = y;
+
+            // Store animation properties
+            sprite.baseX = sprite.x;
+            sprite.baseY = sprite.y;
+            sprite.bobOffset = Math.random() * Math.PI * 2;
+            sprite.rotationOffset = Math.random() * Math.PI * 2;
+            sprite.baseRotation = (Math.random() - 0.5) * 0.17;
+
+            // Add subtle scale variation
+            sprite.scale.set(0.9 + Math.random() * 0.2);
+
+            sprites.push(sprite);
+            pixiApp.stage.addChild(sprite);
+          }
+        }
+      }
+
+      // Add gradient fade overlays (use larger fade width for better visibility)
+      const enhancedFadeWidth = fadeWidth * 1; // Double the fade width for better edge coverage
+
+      const leftFadeCanvas = document.createElement('canvas');
+      leftFadeCanvas.width = enhancedFadeWidth;
+      leftFadeCanvas.height = window.innerHeight;
+      const leftCtx = leftFadeCanvas.getContext('2d');
+      if (leftCtx) {
+        const leftGradient = leftCtx.createLinearGradient(0, 0, enhancedFadeWidth, 0);
+        leftGradient.addColorStop(0, 'rgba(250, 248, 243, 1)');
+        leftGradient.addColorStop(0.5, 'rgba(250, 248, 243, 0.8)');
+        leftGradient.addColorStop(1, 'rgba(250, 248, 243, 0)');
+        leftCtx.fillStyle = leftGradient;
+        leftCtx.fillRect(0, 0, enhancedFadeWidth, window.innerHeight);
+      }
+      const leftFadeSprite = new PIXI.Sprite(PIXI.Texture.from(leftFadeCanvas));
+      leftFadeSprite.x = 0;
+      leftFadeSprite.y = 0;
+      pixiApp.stage.addChild(leftFadeSprite);
+
+      const rightFadeCanvas = document.createElement('canvas');
+      rightFadeCanvas.width = enhancedFadeWidth;
+      rightFadeCanvas.height = window.innerHeight;
+      const rightCtx = rightFadeCanvas.getContext('2d');
+      if (rightCtx) {
+        const rightGradient = rightCtx.createLinearGradient(0, 0, enhancedFadeWidth, 0);
+        rightGradient.addColorStop(0, 'rgba(250, 248, 243, 0)');
+        rightGradient.addColorStop(0.5, 'rgba(250, 248, 243, 0.8)');
+        rightGradient.addColorStop(1, 'rgba(250, 248, 243, 1)');
+        rightCtx.fillStyle = rightGradient;
+        rightCtx.fillRect(0, 0, enhancedFadeWidth, window.innerHeight);
+      }
+      const rightFadeSprite = new PIXI.Sprite(PIXI.Texture.from(rightFadeCanvas));
+      rightFadeSprite.x = window.innerWidth - enhancedFadeWidth;
+      rightFadeSprite.y = 0;
+      pixiApp.stage.addChild(rightFadeSprite);
+
+      // Track mouse/touch position
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+          mouseX = e.touches[0].clientX;
+          mouseY = e.touches[0].clientY;
+        }
+      });
+
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+          mouseX = e.touches[0].clientX;
+          mouseY = e.touches[0].clientY;
+        }
+      });
+
+      // Animation loop
+      pixiApp.ticker.add((ticker) => {
+        animateSprites(ticker);
+        updateParticles(ticker);
+        checkHoverAndSpawnParticles();
+      });
+
+      // Handle resize - regenerate diagonal pattern
+      window.addEventListener('resize', () => {
+        pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
+
+        // Clear existing sprites
+        sprites.forEach(sprite => {
+          pixiApp.stage.removeChild(sprite);
+        });
+        sprites.length = 0;
+
+        // Regenerate diagonal pattern with new dimensions
+        const newScreenWidth = window.innerWidth;
+        const newScreenHeight = window.innerHeight;
+        const newNumDiagonalRows = Math.ceil((newScreenHeight + newScreenWidth) / (diagonalSpacing / 2)) + 10;
+        const newNumDiagonalCols = Math.ceil((newScreenWidth + newScreenHeight) / (diagonalSpacing / 2)) + 10;
+
+        const newCenterOffsetX = newScreenWidth / 2;
+        const newCenterOffsetY = newScreenHeight / 2;
+
+        // Create sprites in a diamond grid pattern
+        for (let row = -20; row < newNumDiagonalRows; row++) {
+          for (let col = -20; col < newNumDiagonalCols; col++) {
+            const x = (col - row) * (diagonalSpacing / 2) + newCenterOffsetX;
+            const y = (col + row) * (diagonalSpacing / 2);
+
+            if (x > -spriteSize * 4 && x < newScreenWidth + spriteSize * 4 &&
+                y > -spriteSize * 4 && y < newScreenHeight + spriteSize * 4) {
+
+              const isDumpling = (row + col) % 2 === 0;
+              const texture = isDumpling ? dumplingTexture : steakTexture;
+
+              const sprite = new PIXI.Sprite(texture);
+              sprite.anchor.set(0.5);
+              sprite.width = spriteSize;
+              sprite.height = spriteSize;
+              sprite.alpha = 0.3;
+              sprite.x = x;
+              sprite.y = y;
+              sprite.baseX = sprite.x;
+              sprite.baseY = sprite.y;
+              sprite.bobOffset = Math.random() * Math.PI * 2;
+              sprite.rotationOffset = Math.random() * Math.PI * 2;
+              sprite.baseRotation = (Math.random() - 0.5) * 0.17;
+              sprite.scale.set(0.9 + Math.random() * 0.2);
+
+              sprites.push(sprite);
+              pixiApp.stage.addChild(sprite);
+            }
+          }
+        }
+      });
+
+      function animateSprites(ticker) {
+        const time = Date.now() * 0.001;
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        sprites.forEach((sprite) => {
+          const bobAmount = Math.sin(time + sprite.bobOffset) * 3;
+          sprite.y = sprite.baseY + bobAmount;
+
+          const rotationWobble = Math.sin(time * settings.rotationSpeed + sprite.rotationOffset) * settings.rotationAmount;
+          sprite.rotation = sprite.baseRotation + rotationWobble;
+
+          const parallaxStrength = 0.01;
+          const parallaxX = (mouseX - centerX) * parallaxStrength;
+          const parallaxY = (mouseY - centerY) * parallaxStrength;
+
+          sprite.x = sprite.baseX + parallaxX * 0.5;
+          sprite.y = sprite.baseY + bobAmount + parallaxY * 0.5;
+        });
+      }
+
+      function checkHoverAndSpawnParticles() {
+        hoveredSprites.clear();
+
+        sprites.forEach((sprite) => {
+          const distance = Math.sqrt(
+            Math.pow(mouseX - sprite.x, 2) + Math.pow(mouseY - sprite.y, 2)
+          );
+
+          if (distance < settings.hoverRadius) {
+            hoveredSprites.add(sprite);
+
+            if (Math.random() < 0.2) {
+              spawnSteamParticle(sprite.x, sprite.y);
+            }
+          }
+        });
+      }
+
+      function spawnSteamParticle(x, y) {
+        if (particles.length > settings.maxParticles) return;
+
+        let particle;
+
+        if (particlePool.length > 0) {
+          particle = particlePool.pop();
+          particle.visible = true;
+        } else {
+          const graphics = new PIXI.Graphics();
+          const size = 12 + Math.random() * 6;
+
+          for (let j = 0; j < 3; j++) {
+            const radius = size * (1 - j * 0.25);
+            const alpha = 0.15 * (1 - j * 0.3);
+            graphics.circle(0, 0, radius);
+            graphics.fill({ color: 0xffffff, alpha });
+          }
+
+          pixiApp.stage.addChild(graphics);
+          particle = graphics;
+          particle.baseSize = size;
+        }
+
+        particle.x = x;
+        particle.y = y;
+        particle.alpha = 1;
+        particle.scale.set(0.5 + Math.random() * 0.5);
+        particle.velocity = {
+          x: (Math.random() - 0.5) * 1,
+          y: -1.5 - Math.random() * 1
+        };
+        particle.wobbleTime = 0;
+        particle.lifespan = 1.5 + Math.random() * 0.5;
+        particle.age = 0;
+        particle.rotation = Math.random() * Math.PI * 2;
+        particle.rotationSpeed = (Math.random() - 0.5) * 0.02;
+
+        particles.push(particle);
+      }
+
+      function updateParticles(ticker) {
+        const deltaTime = ticker.deltaTime / 60;
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const particle = particles[i];
+          particle.age += deltaTime;
+
+          if (particle.age >= particle.lifespan) {
+            particle.visible = false;
+            particles.splice(i, 1);
+            particlePool.push(particle);
+            continue;
+          }
+
+          particle.y += particle.velocity.y * ticker.deltaTime;
+          particle.wobbleTime += deltaTime;
+          particle.x += particle.velocity.x * ticker.deltaTime + Math.sin(particle.wobbleTime * 3) * 0.8;
+
+          particle.rotation += particle.rotationSpeed * ticker.deltaTime;
+
+          const ageRatio = particle.age / particle.lifespan;
+          const fadeStart = 0.3;
+          const fadeProgress = Math.max(0, (ageRatio - fadeStart) / (1 - fadeStart));
+          particle.alpha = 1 - fadeProgress;
+
+          particle.scale.set((0.5 + Math.random() * 0.5) * (1 + ageRatio * 1.5));
+        }
+      }
+
+      console.log('PixiJS marquee initialized');
+    }
+
+    // ===== AUDIO & INTERACTION INITIALIZATION =====
+    function initAudioAndInteractions() {
+      console.log('Initializing audio and interactions...');
+
+      const bgm = document.getElementById('bgm');
+      const click1 = document.getElementById('click1');
+      const pop1 = document.getElementById('pop1');
+      const pop2 = document.getElementById('pop2');
+
+      const musicBtn = document.getElementById('musicBtn');
+      const musicIcon = document.getElementById('musicIcon');
+      let isPlaying = true;
+
+      // Try to play BGM on load
+      bgm.play().catch(() => {
+        isPlaying = false;
+        if (musicIcon) musicIcon.src = '/speaker-simple-slash-bold.svg';
+
+        const playOnInteraction = () => {
+          bgm.play();
+          isPlaying = true;
+          if (musicIcon) musicIcon.src = '/speaker-simple-high-bold.svg';
+          document.removeEventListener('click', playOnInteraction);
+        };
+        document.addEventListener('click', playOnInteraction);
+      });
+
+      // Music button click handler
+      musicBtn?.addEventListener('click', () => {
+        click1.currentTime = 0;
+        click1.play();
+
+        if (isPlaying) {
+          bgm.pause();
+          pop1.currentTime = 0;
+          pop1.play();
+          if (musicIcon) musicIcon.src = '/speaker-simple-slash-bold.svg';
+        } else {
+          bgm.play();
+          pop2.currentTime = 0;
+          pop2.play();
+          if (musicIcon) musicIcon.src = '/speaker-simple-high-bold.svg';
+        }
+        isPlaying = !isPlaying;
+      });
+
+      // Window management
+      const windows = {
+        window2: document.getElementById('window2')
+      };
+
+      function openWindow(windowId) {
+        const win = windows[windowId];
+        if (win) {
+          win.classList.remove('hidden');
+          gsap.fromTo(win,
+            { scale: 0, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.7)' }
+          );
+        }
+      }
+
+      function closeWindow(windowId) {
+        const win = windows[windowId];
+        if (win) {
+          pop2.currentTime = 0;
+          pop2.play();
+          gsap.to(win, {
+            scale: 0,
+            opacity: 0,
+            duration: 0.2,
+            ease: 'power2.in',
+            onComplete: () => {
+              win.classList.add('hidden');
+            }
+          });
+        }
+      }
+
+      // Fullscreen video button click handler
+      const fullscreenVideoBtn = document.getElementById('fullscreenVideoBtn');
+      const fullscreenVideo = document.getElementById('fullscreenVideo');
+      let wasMusicPlaying = false;
+
+      fullscreenVideoBtn?.addEventListener('click', () => {
+        click1.currentTime = 0;
+        click1.play();
+
+        if (fullscreenVideo) {
+          // Pause background music if it's playing
+          wasMusicPlaying = isPlaying;
+          if (isPlaying) {
+            bgm.pause();
+            isPlaying = false;
+          }
+
+          // Load YouTube video in iframe (autoplay=0 means it starts paused)
+          fullscreenVideo.src = 'https://www.youtube.com/embed/duD1G4n5aMA?autoplay=0&rel=0&modestbranding=1';
+
+          // Show iframe element
+          fullscreenVideo.classList.remove('hidden');
+
+          // Request fullscreen on the iframe element
+          if (fullscreenVideo.requestFullscreen) {
+            fullscreenVideo.requestFullscreen();
+          } else if (fullscreenVideo.webkitRequestFullscreen) {
+            fullscreenVideo.webkitRequestFullscreen();
+          } else if (fullscreenVideo.mozRequestFullScreen) {
+            fullscreenVideo.mozRequestFullScreen();
+          } else if (fullscreenVideo.msRequestFullscreen) {
+            fullscreenVideo.msRequestFullscreen();
+          }
+
+          // Handle fullscreen exit (ESC key or exit button)
+          const handleFullscreenChange = () => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement &&
+                !document.mozFullScreenElement && !document.msFullscreenElement) {
+              // User exited fullscreen
+              fullscreenVideo.classList.add('hidden');
+              fullscreenVideo.src = 'about:blank'; // Clear iframe
+
+              if (wasMusicPlaying) {
+                bgm.play();
+                isPlaying = true;
+              }
+
+              document.removeEventListener('fullscreenchange', handleFullscreenChange);
+              document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+              document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+              document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+            }
+          };
+
+          document.addEventListener('fullscreenchange', handleFullscreenChange);
+          document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+          document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+          document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        }
+      });
+
+      // Window button click handlers
+      document.getElementById('window2Btn')?.addEventListener('click', () => {
+        click1.currentTime = 0;
+        click1.play();
+        openWindow('window2');
+      });
+
+      // Close button handlers
+      document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const windowId = btn.dataset.window;
+          if (windowId) {
+            closeWindow(windowId);
+          }
+        });
+      });
+
+      // Make windows draggable
+      Object.values(windows).forEach((win) => {
+        if (win) {
+          Draggable.create(win, {
+            trigger: win.querySelector('.window-titlebar'),
+            bounds: '#canvas',
+            type: 'x,y',
+            edgeResistance: 0.65,
+            inertia: true
+          });
+        }
+      });
+
+      console.log('Audio and interactions initialized');
+    }
+  </script>
+</BaseLayout>
